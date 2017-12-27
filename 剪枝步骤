@@ -1,0 +1,73 @@
+已知：（1）剪枝py文件weight.py（2）已经训练好的模型（model.pb）(3)生成模型所用的源代码original.py
+求解：（1）新模型newmodel.pb
+参考： jianzhi.py描述如何去除参数，剪枝，重新定义模型
+
+
+进行以下步骤：
+（1）提取出模型中的所有权重，偏差值
+（2）权重进行剪枝
+ (3) 将剪枝后的权重，偏差值重新定义模型。训练模型。
+ (4) 如果模型效果远不如上一个，则选上一个模型作为新模型，并且重新改变alpha,beta参数值。否则，使用新模型
+（5）当模型满足我们最终的要求时，停止剪枝，取出最后的模型。否则，从(1)开始接着剪枝训练
+
+
+步骤详解：
+(1) 根据模型中权重和偏差的名字（变量名）提取出模型中的所有权重，偏差值（path表示model.pb所在的路径）
+
+    def create_graph():
+
+	  """Creates a graph from saved GraphDef file and returns a saver."""
+
+	  # Creates graph from saved graph_def.pb.
+
+	  with tf.gfile.FastGFile(os.path.join('/path/', 'model.pb'),'rb') as f:
+
+		    graph_def = tf.GraphDef()
+
+		    graph_def.ParseFromString(f.read())
+
+		    _ = tf.import_graph_def(graph_def, name='')
+
+
+    sess=tf.Session()
+    create_graph()
+    ##提取所有输入
+    x=sess.graph.get_tensor_by_name('Placeholder:0')
+    y=sess.graph.get_tensor_by_name('Placeholder_1:0')
+    keep_prob=sess.graph.get_tensor_by_name('Placeholder_2:0')
+    ……
+    ##提取所有权重,偏差值（'Variable:0'等括号里的名字就是我们需要输入的变量名，它可以通过运行原文件打印权重和偏置tensor的名字提取获得（如：print（weights.name）））
+    w1=sess.graph.get_tensor_by_name('Variable:0')
+    b1=sess.graph.get_tensor_by_name('Variable_1:0')
+    w2=sess.graph.get_tensor_by_name('Variable_2:0')
+    b2=sess.graph.get_tensor_by_name('Variable_3:0')
+    ……
+
+(2) 假设w1为当前层卷积权重，b1为这层的偏差，w2为下一层的权重，则使用下面的语句实行剪枝（根据当前层和下一层情况进行选择）
+ 
+    w1o,b1o,w2o,out=acc_w_c2c(w1,b1,w2,alpha,beta)#当前层为卷积层，下一层为卷积层
+    w1o,b1o,w2o,out=acc_w_c2f(w1,b1,w2,alpha,beta)#当前层为卷积层，下一层为全连接层
+    w1o,b1o,w2o,out=acc_w_f2f(w1,b1,w2,alpha,beta)#当前层为全连接层，下一层为全连接层
+    备注：
+    #alpha,beta取值一般在（0,1）之间，通过调整alpha,beta来进行剪枝
+    #w1o,b1o,w2o为剪枝之后的w1,b1,w2对应的值，out为剪枝保留的fliter的序号。
+    #如果要对w2进行剪枝，下一层应该输入w2o而不再是w2
+    #最后一层不需要进行剪枝
+    怎样调整alpha,beta
+    依据1，根据剪枝的个数判断：
+	    假设w1最后一维是n,out里元素个数为m
+	    如果m<n*0.8,说明剪多了，将alpha,beta的值减小
+	    如果m>n*0.8,说明剪少了，将alpha,beta的值增大
+	    如果m与n*0.8相差不超过n*0.1，则说明剪的个数合适
+    依据2，根据retrain结果进行判断：
+            如果新模型效果没有旧模型好，说明剪多了，调整alpha,beta的值减小
+            否则认为剪枝个数合适，可以进行下一轮剪枝
+(3)重新定义模型并fine-tuning.权重和偏差初始化都按照剪枝之后的权重和偏差进行初始化，其他不变,之后训练模型，一般我们训练200轮
+
+问题
+（1）训飞了怎么办？有时候会出现accuracy持续不变的时候。
+    这个时候可以：将学习率变小，重新训
+
+
+
+
