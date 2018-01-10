@@ -52,7 +52,7 @@ def variable_weight_loss(shape,stddev,w1):
         tf.add_to_collection("losses",weight_loss)
     return var
 
-def evaluate_pictures(n_epochs=2,batch_size=50,dataset='/root/ipythoncmd/quanti/cifar-10-batches-py'):
+def evaluate_pictures(n_epochs=20,batch_size=50,dataset='/root/ipythoncmd/quanti/cifar-10-batches-py'):
     def loss(logits, labels):
         labels = tf.cast(labels, tf.int64)
         cross_entropy = tf.reduce_mean(

@@ -5,10 +5,12 @@ import pickle
 import time
 from weight import c2c_std,acc_w_c2f,acc_w_f2f
 
+infile = 't103.pb'
+outfile = 't104.pb'
 def create_graph():
     """Creates a graph from saved GraphDef file and returns a saver."""
     # Creates graph from saved graph_def.pb.
-    with tf.gfile.FastGFile(os.path.join('t3.pb'), 'rb') as f:
+    with tf.gfile.FastGFile(os.path.join(infile), 'rb') as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
         _ = tf.import_graph_def(graph_def, name='')
@@ -51,7 +53,7 @@ def loss(logits, labels):
     return tf.add_n(tf.get_collection('losses'), name='total_loss')
 
 batch_size=100
-n_epochs=1
+n_epochs=5
 mnist = load_data()
 train_set_x  = mnist.train.images
 train_set_y = mnist.train.labels
@@ -157,7 +159,7 @@ with g.as_default():
     sess=tf.Session(graph=g)
     sess.run(tf.global_variables_initializer())
     output_graph_def = tf.graph_util.convert_variables_to_constants(sess, sess.graph_def, output_node_names=["accuracy"])
-    with tf.gfile.FastGFile('t107.pb', mode ='wb') as f:
+    with tf.gfile.FastGFile('current.pb', mode ='wb') as f:
         f.write(output_graph_def.SerializeToString())
     
     best_validation_acc = 0
@@ -185,7 +187,7 @@ with g.as_default():
         if valid_acc > best_validation_acc:
                 best_validation_acc = valid_acc
                 output_graph_def = tf.graph_util.convert_variables_to_constants(sess, sess.graph_def, output_node_names=["accuracy"])
-                with tf.gfile.FastGFile('t4.pb', mode ='wb') as f:
+                with tf.gfile.FastGFile(outfile, mode ='wb') as f:
                     f.write(output_graph_def.SerializeToString())
  
 start_time=time.time()
