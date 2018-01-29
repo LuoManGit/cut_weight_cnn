@@ -5,8 +5,8 @@ import pickle
 import time
 from weight import c2c_std,acc_w_c2f,acc_w_f2f
 
-infile = 't103.pb'
-outfile = 't104.pb'
+infile = 'first.pb'
+outfile = 't100.pb'
 def create_graph():
     """Creates a graph from saved GraphDef file and returns a saver."""
     # Creates graph from saved graph_def.pb.
@@ -62,7 +62,7 @@ test_set_y = mnist.test.labels
 #################################################根据名字提取变量值###################################################################
 with tf.Session() as sess:
     create_graph()
-    output_tensor  = sess.graph.get_tensor_by_name('Variable:0')
+    #output_tensor  = sess.graph.get_tensor_by_name('Variable:0')
     output_tensor1 = sess.graph.get_tensor_by_name('Variable_1:0')
     output_tensor2 = sess.graph.get_tensor_by_name('Variable_2:0')
     output_tensor3 = sess.graph.get_tensor_by_name('Variable_3:0')
@@ -71,7 +71,7 @@ with tf.Session() as sess:
     output_tensor6 = sess.graph.get_tensor_by_name('Variable_6:0')
     output_tensor7 = sess.graph.get_tensor_by_name('Variable_7:0')
 
-    wcov1=sess.run(output_tensor,{'Placeholder:0':test_set_x,'Placeholder_1:0':test_set_y,'Placeholder_2:0':1.0})
+    wcov1=sess.run('Variable:0',{'Placeholder:0':test_set_x,'Placeholder_1:0':test_set_y,'Placeholder_2:0':1.0})
     bcov1=sess.run(output_tensor1,{'Placeholder:0':test_set_x,'Placeholder_1:0':test_set_y,'Placeholder_2:0':1.0})
     wcov2=sess.run(output_tensor2,{'Placeholder:0':test_set_x,'Placeholder_1:0':test_set_y,'Placeholder_2:0':1.0})
     bcov2=sess.run(output_tensor3,{'Placeholder:0':test_set_x,'Placeholder_1:0':test_set_y,'Placeholder_2:0':1.0})
